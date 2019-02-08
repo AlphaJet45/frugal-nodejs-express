@@ -7,6 +7,24 @@ let bodyparser = require('body-parser');
 let hostname = 'localhost'; 
 let port = 3000; 
 
+// La variable mongoose nous permettra d'utiliser les fonctionnalités du module mongoose
+let mongoose = require('mongoose');
+// Ces options sont recommandées par mLab pour une connexion à la base
+let options = { server: { socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000 } },
+                replset: { socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000 } } };
+
+// URL de notre base
+let urlmongo = "mongodb://userfrugal:passwordfrugal1@ds127115.mlab.com:27115/restfrugaldb";
+
+// Nous connectons l'API à notre base de données
+mongoose.connect(urlmongo, options);
+
+let db = mongoose.connection;
+db.on('error', console.error.bind(console, 'Erreur lors de la connexion'));
+db.once('open', function() {
+    console.log('Connexion à la base OK');
+});
+
 // Nous créons un objet de type Express.
 let app = express(); 
 
