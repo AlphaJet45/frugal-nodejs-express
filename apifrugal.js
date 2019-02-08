@@ -31,6 +31,15 @@ let app = express();
 app.use(bodyparser.urlencoded({extended: false}));
 app.use(bodyparser.json());
 
+// Pour modéliser les données, le framework mongoose utilise des "schémas" ; nous créons donc un modèle de données :
+let piscineSchema = mongoose.Schema({
+    nom: String,
+    adresse: String,
+    tel: String,
+    description: String
+});
+let Piscine = mongoose.model('Piscine', piscineSchema);
+
 // Afin de faciliter le routage (les URLs que nous souhaitons prendre en charge dans notre API)
 // C'est à partir de cet objet myRouter que nous allons implémenter les méthodes
 let myRouter = express.Router();
@@ -44,46 +53,69 @@ myRouter.route('/')
 });
 
 myRouter.route('/piscines')
-// Méthode GET
 .get(function(req, res){
-    res.json({
-        message: "Liste toutes les piscines de Lille Métropole",
-        ville: req.query.ville,
-        nbResultats: req.query.maxresultat,
-        methode: req.method
-    });
+    // Utilisation de notre schéma Piscine pour interrogation de la base
+    Piscine.find(function(err, piscines){
+        if (err){
+            res.send(err);
+        }
+        res.json(piscines);
+    })
 })
-// Méthode POST
+
 .post(function(req, res){
-    res.json({
-        message : "Ajoute une nouvelle piscine à la liste", 
-        nom: req.body.nom, 
-        ville: req.body.ville, 
-        taille: req.body.taille,
-        methode: req.method
-    });
+    let piscine = new Piscine();
+    piscine.nom = req.body.nom;
+    piscine.adresse = req.body.adresse;
+    piscine.tel = req.body.tel;
+    piscine.description = req.body.description;
+    // Nous stockons l'objet en base
+    piscine.save(function(err){
+        if (err){
+            res.send(err);
+        }
+        res.send({message: "Bravo, la piscine est maintenant stockée en base de données"});
+    })
 })
-// Méthode PUT
-.put(function(req, res){
-    res.json({message: "Mise à jour des informations d'une piscine dans la liste", methode: req.method});
-})
-// Méthode DELETE
-.delete(function(req, res){
-    res.json({message: "Suppression d'une piscine dans la liste", methode: req.method});
-});
 
 myRouter.route('/piscines/:piscine_id')
 .get(function(req, res) {
-    res.json({message: "Vous souhaitez accéder aux informations de l'API n°" + req.params.piscine_id});
+    Piscine.findById(req.params.piscine_id, function(err, piscine){
+        if (err){
+            res.send(err);
+        }
+        res.json(piscine);
+    });
 })
+
 .put(function(req, res){
-    res.json({message: "Vous souhaitez modifier les informations de la piscine n°" + req.params.piscine_id});
+    Piscine.findById(req.params.piscine_id, function(err, piscine){
+        if (err){
+            res.send(err);
+        }
+        // Mise à jour des données de la piscine
+        piscine.nom = req.body.nom;
+        piscine.adresse = req.body.adresse;
+        piscine.tel = req.body.tel;
+        piscine.description = req.body.description;
+        
+        piscine.save(function(err){
+            if (err){
+                res.send(err);
+            }
+            res.json({message: "Bravo, mise à jour des données OK"});
+        });
+    });
 })
+
 .delete(function(req, res){
-    res.json({message: "Vous souhaitez supprimer la piscine n°" + req.params.piscine_id});
+    Piscine.remove({_id: req.params.piscine_id}, function (err, piscine){
+        if (err){
+            res.send(err);
+        }
+        res.json({message: "Bravo, piscine supprimée"});
+    });
 });
-
-
 
 
 // Démarrer le serveur 
